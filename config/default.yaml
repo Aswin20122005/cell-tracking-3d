@@ -1,0 +1,41 @@
+# Default configuration for the 3D+time cell-tracking pipeline.
+
+seed: 0
+
+data:
+  root: data                 # path to the dataset root
+  synthetic: false           # set true to smoke-test without real data
+  train_embryos: [embryo_01, embryo_02, embryo_03, embryo_04]
+  val_embryos:   [embryo_05]
+  voxel_size: [1.0, 1.0, 1.0]  # (z, y, x) — anisotropy scaling if needed
+
+patch:
+  size: [16, 64, 64]         # (z, y, x)
+  gt_centred_ratio: 0.5      # fraction of patches centred on a cell...
+  uniform_ratio: 0.5         # ...vs sampled uniformly at random (bias fix)
+  sigma: 2.0                 # Gaussian radius of the target heatmap blob
+
+model:
+  in_channels: 1
+  base_channels: 16
+  depth: 3
+
+train:
+  epochs: 40
+  batch_size: 8
+  lr: 0.001
+  patches_per_volume: 32
+  device: cuda               # falls back to cpu automatically if unavailable
+  checkpoint_dir: checkpoints
+
+detect:
+  peak_threshold: 0.5        # heatmap value to accept a peak
+  nms_min_distance: 3        # voxels between accepted peaks
+
+track:
+  max_link_distance: 10.0    # max voxel distance to link across frames
+  min_track_length: 3        # drop tracks shorter than this
+
+inference:
+  tta: false
+  ensemble_checkpoints: []   # list of .pt paths to average
