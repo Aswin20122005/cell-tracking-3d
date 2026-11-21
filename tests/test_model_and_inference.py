@@ -47,3 +47,25 @@ def test_score_frames_aggregates():
     res = score_frames([np.array([[0, 0, 0]])] * 2, [np.array([[0, 0, 0]])] * 2)
     assert res["f1"] == 1.0 and res["tp"] == 2
     assert prf(0, 0, 0)["f1"] == 0.0
+
+
+def test_ensemble_averages_checkpoints_with_different_architectures(tmp_path):
+    from src.inference.ensemble import load_model, predict_volume_ensemble
+
+    paths = []
+    for seed, width in [(0, 4), (1, 6)]:
+        torch.manual_seed(seed)
+        arch = {"in_channels": 1, "base_channels": width, "depth": 2}
+        path = tmp_path / f"detector_s{seed}.pt"
+        torch.save({"model": UNet3D(**arch).state_dict(), "cfg": arch}, path)
+        paths.append(str(path))
+
+    # model_cfg deliberately doesn't match either checkpoint
+    wrong_cfg = {"in_channels": 1, "base_channels": 16, "depth": 3}
+    assert load_model(paths[1], wrong_cfg, torch.device("cpu")).head.in_channels == 6
+
+    volume = np.random.default_rng(0).random((8, 24, 24)).astype(np.float32)
+    hm = predict_volume_ensemble(paths, wrong_cfg, volume, (8, 16, 16), torch.device("cpu"))
+    singles = [predict_volume(load_model(p, wrong_cfg, torch.device("cpu")), volume, (8, 16, 16),
+                              torch.device("cpu")) for p in paths]
+    np.testing.assert_allclose(hm, np.mean(singles, axis=0), rtol=1e-5, atol=1e-6)
