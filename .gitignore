@@ -6,10 +6,12 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# Data & artifacts — never commit these
-data/
-outputs/
-checkpoints/
+# Data & artifacts — never commit these.
+# Anchored with a leading slash: a bare "data/" also matched src/data/, so the
+# whole data-loading package was silently left out of the repository.
+/data/
+/outputs/
+/checkpoints/
 *.pt
 *.pth
 *.tif
