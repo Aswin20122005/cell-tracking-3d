@@ -15,8 +15,15 @@ from .tta import predict_volume_tta
 
 
 def load_model(ckpt_path, model_cfg, device):
-    model = UNet3D(**model_cfg).to(device)
-    state = torch.load(ckpt_path, map_location=device)
+    """Load a checkpoint written by train.py.
+
+    The architecture stored in the checkpoint wins over model_cfg, so ensemble members
+    trained with different widths/depths still load. weights_only=True refuses
+    arbitrary pickled objects, so loading a downloaded checkpoint can't run code.
+    """
+    state = torch.load(ckpt_path, map_location=device, weights_only=True)
+    arch = state.get("cfg", model_cfg) if isinstance(state, dict) else model_cfg
+    model = UNet3D(**arch).to(device)
     model.load_state_dict(state["model"] if "model" in state else state)
     model.eval()
     return model
