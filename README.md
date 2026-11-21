@@ -49,16 +49,17 @@ cell-tracking-3d/
 
 ## Results
 
-> Fill in with your own run numbers as you reproduce them. Example progression:
+**Synthetic data** (reproducible on any machine, `scripts/run_synthetic.sh`, held-out embryo, matching tolerance 3 voxels):
 
-| Stage                                  | Val score |
-| -------------------------------------- | --------- |
-| DoG blob baseline                      | ~0.78     |
-| 3D U-Net detector                      | ~0.85     |
-| + patch-bias fix (uniform patches)     | ~0.86     |
-| + TTA + ensemble + track filtering     | ~0.87     |
+| Method | Precision | Recall | F1 |
+| --- | --- | --- | --- |
+| DoG blob baseline | 1.00 | 0.99 | 0.99 |
+| 3D U-Net, 3 epochs | 0.16 | 1.00 | 0.27 |
+| 3D U-Net, 12 epochs | 1.00 | 1.00 | 1.00 |
 
-*(Scores depend on the exact competition metric and data split — regenerate locally.)*
+The synthetic cells are easy (isotropic Gaussians plus mild noise), so these numbers check that the pipeline works, not how well the method performs. The 3-epoch row shows the same "always firing" behaviour an under-trained detector has on real data.
+
+**Kaggle Biohub data:** the competition runs progressed from a DoG baseline to the 3D U-Net with TTA, ensembling and track filtering (leaderboard ~0.78 → ~0.87). Scores depend on the exact competition metric and data split; regenerate locally with the commands below.
 
 ## Setup
 
@@ -66,6 +67,14 @@ cell-tracking-3d/
 python -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+# CPU-only machines: install the much smaller CPU build of PyTorch first
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
+### Quick start without the dataset
+
+```bash
+scripts/run_synthetic.sh      # DoG baseline, train a small U-Net, predict with TTA + tracking (~1 min on CPU)
 ```
 
 ## Data
@@ -78,7 +87,7 @@ data:
   root: /path/to/biohub/data
 ```
 
-Expected layout (adapt in `src/data/dataset.py` to match the actual release):
+Expected layout (loaded by `src/data/dataset.py`; adapt it if the release differs):
 
 ```
 data/
@@ -98,21 +107,36 @@ python -m src.predict --config config/default.yaml --method dog
 # 2. Train the 3D U-Net
 python -m src.train --config config/default.yaml
 
-# 3. Predict with TTA + ensemble
-python -m src.predict --config config/default.yaml --method unet --tta --ensemble
+# 3. Predict with TTA + ensemble (+ tracking)
+scripts/train_ensemble.sh            # trains seeds 0, 1, 2
+python -m src.predict --config config/default.yaml --method unet --tta --ensemble --track
 
-# 4. Evaluate
-python -m src.evaluate --pred outputs/pred.csv --gt data/embryo_05/labels.csv
+# 4. Evaluate (--embryo selects the embryo the labels belong to)
+python -m src.evaluate --pred outputs/pred.csv --gt data/embryo_05/labels.csv --embryo embryo_05
 
 # 5. Leave-one-embryo-out validation
 python -m src.validation.loeo --config config/default.yaml
 ```
 
+## Configuration notes
+
+- `data.voxel_size` (z, y, x) is used for linking and matching distances, so anisotropic stacks (thick z-slices) are handled in physical units.
+- `track.max_gap` is how many frames a cell may go undetected before its track is closed.
+- Config files are validated on load; missing keys are reported together.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest          # 46 tests, CPU only, ~15 s
+```
+
+The suite covers data loading (synthetic and the real TIFF layout), patch sampling, augmentation and TTA inverses, the U-Net, sliding-window inference, ensembling, peak extraction, metrics, tracking, config validation, and end-to-end training → prediction → LOEO on synthetic data. GitHub Actions runs it on every push with CPU-only PyTorch.
+
 ## Notes
 
-- Designed to run on a single modest GPU; falls back to CPU (slow) for the baseline.
-- The synthetic-data toggle in `src/data/dataset.py` lets you smoke-test the whole
-  pipeline end-to-end without the real dataset.
+- Designed to run on a single modest GPU; falls back to CPU (slow on real data).
+- `src/data/` (dataset, patches, transforms) was missing from earlier versions of this repository, because the `.gitignore` rule `data/` also matched `src/data/`. The rules are now anchored to the repository root.
 
 ## License
 
