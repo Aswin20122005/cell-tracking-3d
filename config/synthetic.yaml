@@ -1,0 +1,42 @@
+# Quick end-to-end run on generated data (no dataset or GPU needed), e.g.
+#   python -m src.train   --config config/synthetic.yaml
+#   python -m src.predict --config config/synthetic.yaml --method unet --track
+seed: 0
+
+data:
+  root: data
+  synthetic: true
+  train_embryos: [embryo_01, embryo_02]
+  val_embryos:   [embryo_03]
+  voxel_size: [1.0, 1.0, 1.0]
+
+patch:
+  size: [16, 32, 32]
+  gt_centred_ratio: 0.5
+  uniform_ratio: 0.5
+  sigma: 2.0
+
+model:
+  in_channels: 1
+  base_channels: 8
+  depth: 2
+
+train:
+  epochs: 3
+  batch_size: 8
+  lr: 0.003
+  patches_per_volume: 16
+  device: cpu
+  checkpoint_dir: checkpoints
+
+detect:
+  peak_threshold: 0.3
+  nms_min_distance: 2
+
+track:
+  max_link_distance: 6.0
+  min_track_length: 2
+
+inference:
+  tta: false
+  ensemble_checkpoints: []
