@@ -11,13 +11,18 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 
-def link_frames(detections_per_frame, max_distance=10.0, min_track_length=3, max_gap=1):
+def link_frames(detections_per_frame, max_distance=10.0, min_track_length=3, max_gap=1,
+                voxel_size=(1.0, 1.0, 1.0)):
     """Link detections across frames into tracks.
 
     Parameters
     ----------
     detections_per_frame : list[np.ndarray]
         One (N_t, 3) array of (z, y, x) detections per timepoint.
+    voxel_size : (z, y, x)
+        Physical size of a voxel. Distances are measured in these units, so in an
+        anisotropic volume (e.g. 2 µm z-steps, 0.5 µm pixels) one z-step counts as
+        four pixels. max_distance is in the same units.
     max_gap : int
         How many consecutive frames a track may miss (a cell not detected) and still
         be continued. Tracks that have been missing longer are closed, so a new cell
@@ -35,7 +40,8 @@ def link_frames(detections_per_frame, max_distance=10.0, min_track_length=3, max
         # Only tracks seen within the allowed gap can be extended.
         active = [i for i, tr in enumerate(tracks) if t - tr["frames"][-1] <= max_gap + 1]
         prev_coords = np.array([tracks[i]["coords"][-1] for i in active]).reshape(-1, 3)
-        assigned_active, assigned_dets = _assign(prev_coords, dets, max_distance)
+        scale = np.asarray(voxel_size, dtype=float)
+        assigned_active, assigned_dets = _assign(prev_coords * scale, dets * scale, max_distance)
 
         for ai, di in zip(assigned_active, assigned_dets):
             tracks[active[ai]]["frames"].append(t)

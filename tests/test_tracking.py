@@ -37,3 +37,18 @@ def test_assignment_is_one_to_one():
     frames = [np.array([[5, 10, 10], [5, 12, 10]]), np.array([[5, 11, 10]])]
     tracks = link_frames(frames, max_distance=5, min_track_length=2)
     assert len(tracks) == 1
+
+
+def test_anisotropic_voxels_scale_link_distance():
+    # one z-step; with 4x thicker z slices that's 4 units, beyond max_distance=3
+    frames = [np.array([[5, 10, 10]]), np.array([[6, 10, 10]])]
+    assert len(link_frames(frames, max_distance=3, min_track_length=2)) == 1
+    assert link_frames(frames, max_distance=3, min_track_length=2, voxel_size=(4, 1, 1)) == []
+
+
+def test_anisotropic_voxels_scale_matching_tolerance():
+    from src.validation.metrics import match_detections
+
+    gt, pred = np.array([[5, 10, 10]]), np.array([[6, 10, 10]])
+    assert match_detections(pred, gt, tol=2) == (1, 0, 0)
+    assert match_detections(pred, gt, tol=2, voxel_size=(4, 1, 1)) == (0, 1, 1)

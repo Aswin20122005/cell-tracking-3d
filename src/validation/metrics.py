@@ -8,10 +8,11 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 
-def match_detections(pred, gt, tol=3.0):
-    """One-to-one match pred<->gt within `tol` voxels. Returns (tp, fp, fn)."""
-    pred = np.asarray(pred, dtype=float)
-    gt = np.asarray(gt, dtype=float)
+def match_detections(pred, gt, tol=3.0, voxel_size=(1.0, 1.0, 1.0)):
+    """One-to-one match pred<->gt within `tol` (in voxel_size units). Returns (tp, fp, fn)."""
+    scale = np.asarray(voxel_size, dtype=float)
+    pred = np.asarray(pred, dtype=float).reshape(-1, 3) * scale
+    gt = np.asarray(gt, dtype=float).reshape(-1, 3) * scale
     if len(pred) == 0:
         return 0, 0, len(gt)
     if len(gt) == 0:
@@ -34,10 +35,10 @@ def prf(tp, fp, fn):
             "tp": tp, "fp": fp, "fn": fn}
 
 
-def score_frames(preds_per_frame, gts_per_frame, tol=3.0):
+def score_frames(preds_per_frame, gts_per_frame, tol=3.0, voxel_size=(1.0, 1.0, 1.0)):
     """Aggregate P/R/F1 across all frames."""
     TP = FP = FN = 0
     for pred, gt in zip(preds_per_frame, gts_per_frame):
-        tp, fp, fn = match_detections(pred, gt, tol=tol)
+        tp, fp, fn = match_detections(pred, gt, tol=tol, voxel_size=voxel_size)
         TP += tp; FP += fp; FN += fn
     return prf(TP, FP, FN)

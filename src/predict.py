@@ -26,6 +26,7 @@ from .validation.metrics import score_frames
 def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
     device = get_device(cfg["train"]["device"])
     patch_size = tuple(cfg["patch"]["size"])
+    voxel_size = tuple(cfg["data"].get("voxel_size", (1.0, 1.0, 1.0)))
 
     ds = EmbryoDataset(
         cfg["data"]["root"], cfg["data"]["val_embryos"],
@@ -72,7 +73,7 @@ def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
     # real embryos with labels.csv), so a separate evaluate step isn't required.
     gts = [frame.centres for frame in frames]
     if any(len(g) for g in gts):
-        res = score_frames(detections_per_frame, gts)
+        res = score_frames(detections_per_frame, gts, voxel_size=voxel_size)
         print(f"[predict] precision={res['precision']:.3f} recall={res['recall']:.3f} f1={res['f1']:.3f}")
 
     if do_track:
@@ -81,6 +82,7 @@ def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
             max_distance=cfg["track"]["max_link_distance"],
             min_track_length=cfg["track"]["min_track_length"],
             max_gap=cfg["track"].get("max_gap", 1),
+            voxel_size=voxel_size,
         )
         print(f"[predict] {len(tracks)} tracks after linking + filtering")
 

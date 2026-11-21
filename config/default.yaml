@@ -7,7 +7,7 @@ data:
   synthetic: false           # set true to smoke-test without real data
   train_embryos: [embryo_01, embryo_02, embryo_03, embryo_04]
   val_embryos:   [embryo_05]
-  voxel_size: [1.0, 1.0, 1.0]  # (z, y, x) — anisotropy scaling if needed
+  voxel_size: [1.0, 1.0, 1.0]  # (z, y, x) physical voxel size; used for linking and matching distances
 
 patch:
   size: [16, 64, 64]         # (z, y, x)
