@@ -41,3 +41,17 @@ def test_loeo_runs_one_fold_per_embryo(cfg):
     c["data"]["val_embryos"] = ["embryo_02"]
     mean, std = loeo(c)
     assert 0.0 <= mean <= 1.0 and std >= 0.0
+
+
+def test_train_cli_overrides_seed_and_epochs(tmp_path, monkeypatch):
+    import yaml
+    from src import train as train_module
+
+    cfg = load_config("config/synthetic.yaml")
+    cfg["train"].update(patches_per_volume=2, checkpoint_dir=str(tmp_path))
+    cfg["model"].update(base_channels=4)
+    path = tmp_path / "cfg.yaml"
+    path.write_text(yaml.safe_dump(cfg))
+
+    ckpt = train_module.main(["--config", str(path), "--seed", "7", "--epochs", "1", "--device", "cpu"])
+    assert ckpt.endswith("detector_s7.pt")
