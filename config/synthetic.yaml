@@ -22,7 +22,7 @@ model:
   depth: 2
 
 train:
-  epochs: 3
+  epochs: 12
   batch_size: 8
   lr: 0.003
   patches_per_volume: 16
@@ -30,7 +30,7 @@ train:
   checkpoint_dir: checkpoints
 
 detect:
-  peak_threshold: 0.3
+  peak_threshold: 0.5
   nms_min_distance: 2
 
 track:
