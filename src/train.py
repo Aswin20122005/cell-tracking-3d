@@ -2,6 +2,7 @@
 
 Usage:
     python -m src.train --config config/default.yaml
+    python -m src.train --config config/default.yaml --seed 1   # another ensemble member
 """
 
 from __future__ import annotations
@@ -93,11 +94,21 @@ def train(cfg):
     return ckpt_path
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="config/default.yaml")
-    args = ap.parse_args()
-    train(load_config(args.config))
+    ap.add_argument("--seed", type=int, help="override the config seed (for training ensemble members)")
+    ap.add_argument("--epochs", type=int, help="override train.epochs")
+    ap.add_argument("--device", help="override train.device, e.g. cpu")
+    args = ap.parse_args(argv)
+    cfg = load_config(args.config)
+    if args.seed is not None:
+        cfg["seed"] = args.seed
+    if args.epochs is not None:
+        cfg["train"]["epochs"] = args.epochs
+    if args.device:
+        cfg["train"]["device"] = args.device
+    return train(cfg)
 
 
 if __name__ == "__main__":
