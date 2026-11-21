@@ -21,6 +21,7 @@ from .detection.peaks import peaks_from_heatmap, predict_volume
 from .inference.tta import predict_volume_tta
 from .inference.ensemble import load_model, predict_volume_ensemble
 from .tracking.linker import link_frames
+from .validation.metrics import score_frames
 
 
 def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
@@ -67,6 +68,13 @@ def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
         detections_per_frame.append(coords)
         for (z, y, x) in coords:
             rows.append({"embryo": frame.embryo, "t": frame.t, "z": z, "y": y, "x": x})
+
+    # Score against the frames' own labels when they have any (synthetic data, or
+    # real embryos with labels.csv), so a separate evaluate step isn't required.
+    gts = [frame.centres for frame in frames]
+    if any(len(g) for g in gts):
+        res = score_frames(detections_per_frame, gts)
+        print(f"[predict] precision={res['precision']:.3f} recall={res['recall']:.3f} f1={res['f1']:.3f}")
 
     if do_track:
         tracks = link_frames(
