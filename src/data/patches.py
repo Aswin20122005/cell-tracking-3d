@@ -22,10 +22,10 @@ def gaussian_heatmap(shape, centres, sigma=2.0):
         hi = np.minimum(np.ceil(c + radius + 1).astype(int), shape)
         if np.any(hi <= lo):
             continue
-        grids = np.meshgrid(*[np.arange(l, h) for l, h in zip(lo, hi)], indexing="ij")
+        grids = np.meshgrid(*[np.arange(a, b) for a, b in zip(lo, hi)], indexing="ij")
         d2 = sum((g - ci) ** 2 for g, ci in zip(grids, c))
         blob = np.exp(-d2 / (2 * sigma ** 2)).astype(np.float32)
-        region = tuple(slice(l, h) for l, h in zip(lo, hi))
+        region = tuple(slice(a, b) for a, b in zip(lo, hi))
         heatmap[region] = np.maximum(heatmap[region], blob)
     return heatmap
 

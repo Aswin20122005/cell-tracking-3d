@@ -8,10 +8,10 @@ from __future__ import annotations
 import numpy as np
 
 from src.data.dataset import EmbryoDataset
-from src.data.patches import sample_patches, gaussian_heatmap
+from src.data.patches import sample_patches
 from src.detection.blob_baseline import detect_blobs
 from src.tracking.linker import link_frames
-from src.validation.metrics import match_detections, score_frames
+from src.validation.metrics import match_detections
 
 
 def _synthetic_frames():

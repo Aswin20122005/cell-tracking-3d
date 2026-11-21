@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import os
 
-import numpy as np
 import pandas as pd
 
 from .utils import load_config, get_device
