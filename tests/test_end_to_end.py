@@ -25,7 +25,7 @@ def test_train_then_predict_with_tta_and_tracking(cfg, tmp_path):
     out = tmp_path / "pred.csv"
     predict(cfg, "unet", use_tta=True, use_ensemble=False, do_track=True, out_path=str(out))
     df = pd.read_csv(out)
-    assert list(df.columns) == ["embryo", "t", "z", "y", "x"] or df.empty
+    assert list(df.columns) == ["embryo", "t", "z", "y", "x"]
 
 
 def test_dog_baseline_finds_the_synthetic_cells(cfg, tmp_path, capsys):

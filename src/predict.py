@@ -86,7 +86,9 @@ def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
         print(f"[predict] {len(tracks)} tracks after linking + filtering")
 
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
-    pd.DataFrame(rows).to_csv(out_path, index=False)
+    # Explicit columns so a run with no detections still writes a header row;
+    # an empty file made evaluate.py fail with EmptyDataError.
+    pd.DataFrame(rows, columns=["embryo", "t", "z", "y", "x"]).to_csv(out_path, index=False)
     print(f"[predict] wrote {len(rows)} detections -> {out_path}")
 
 
