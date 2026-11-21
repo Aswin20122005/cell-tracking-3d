@@ -35,6 +35,7 @@ detect:
 track:
   max_link_distance: 10.0    # max voxel distance to link across frames
   min_track_length: 3        # drop tracks shorter than this
+  max_gap: 1                 # frames a cell may go undetected before its track is closed
 
 inference:
   tta: false

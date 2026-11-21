@@ -1,8 +1,8 @@
 """Link per-frame detections into tracks across time.
 
-Greedy/optimal nearest-neighbour assignment between consecutive frames, capped by
-a max link distance, followed by short-track removal to drop transient false
-positives.
+Optimal (Hungarian) nearest-neighbour assignment between consecutive frames, capped
+by a max link distance and a max gap, followed by short-track removal to drop
+transient false positives.
 """
 
 from __future__ import annotations
@@ -11,43 +11,44 @@ import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 
-def link_frames(detections_per_frame, max_distance=10.0, min_track_length=3):
+def link_frames(detections_per_frame, max_distance=10.0, min_track_length=3, max_gap=1):
     """Link detections across frames into tracks.
 
     Parameters
     ----------
     detections_per_frame : list[np.ndarray]
         One (N_t, 3) array of (z, y, x) detections per timepoint.
+    max_gap : int
+        How many consecutive frames a track may miss (a cell not detected) and still
+        be continued. Tracks that have been missing longer are closed, so a new cell
+        appearing near where an old one vanished long ago isn't wrongly joined to it.
 
     Returns
     -------
     list[dict] : each track as {"id": int, "frames": [t...], "coords": [(z,y,x)...]}
     """
-    tracks = []            # active tracks: list of dicts
+    tracks = []
     next_id = 0
 
     for t, dets in enumerate(detections_per_frame):
-        if t == 0:
-            for d in dets:
-                tracks.append({"id": next_id, "frames": [t], "coords": [tuple(d)]})
-                next_id += 1
-            continue
+        dets = np.asarray(dets).reshape(-1, 3)
+        # Only tracks seen within the allowed gap can be extended.
+        active = [i for i, tr in enumerate(tracks) if t - tr["frames"][-1] <= max_gap + 1]
+        prev_coords = np.array([tracks[i]["coords"][-1] for i in active]).reshape(-1, 3)
+        assigned_active, assigned_dets = _assign(prev_coords, dets, max_distance)
 
-        prev_coords = np.array([tr["coords"][-1] for tr in tracks]) if tracks else np.empty((0, 3))
-        assigned_tracks, assigned_dets = _assign(prev_coords, dets, max_distance)
-
-        for ti, di in zip(assigned_tracks, assigned_dets):
-            tracks[ti]["frames"].append(t)
-            tracks[ti]["coords"].append(tuple(dets[di]))
+        for ai, di in zip(assigned_active, assigned_dets):
+            tracks[active[ai]]["frames"].append(t)
+            tracks[active[ai]]["coords"].append(tuple(dets[di]))
 
         # unmatched detections start new tracks
+        matched = set(assigned_dets)
         for di in range(len(dets)):
-            if di not in assigned_dets:
+            if di not in matched:
                 tracks.append({"id": next_id, "frames": [t], "coords": [tuple(dets[di])]})
                 next_id += 1
 
-    tracks = [tr for tr in tracks if len(tr["frames"]) >= min_track_length]
-    return tracks
+    return [tr for tr in tracks if len(tr["frames"]) >= min_track_length]
 
 
 def _assign(prev_coords, dets, max_distance):

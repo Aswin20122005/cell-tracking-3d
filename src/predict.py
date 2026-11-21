@@ -81,6 +81,7 @@ def run(cfg, method, use_tta, use_ensemble, do_track, out_path):
             detections_per_frame,
             max_distance=cfg["track"]["max_link_distance"],
             min_track_length=cfg["track"]["min_track_length"],
+            max_gap=cfg["track"].get("max_gap", 1),
         )
         print(f"[predict] {len(tracks)} tracks after linking + filtering")
 
