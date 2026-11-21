@@ -3,4 +3,4 @@
 set -e
 python -m src.train   --config config/default.yaml
 python -m src.predict --config config/default.yaml --method unet --tta --ensemble --track --out outputs/pred_unet.csv
-python -m src.evaluate --pred outputs/pred_unet.csv --gt data/embryo_05/labels.csv
+python -m src.evaluate --pred outputs/pred_unet.csv --gt data/embryo_05/labels.csv --embryo embryo_05
